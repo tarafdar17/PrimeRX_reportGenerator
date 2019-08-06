@@ -2,7 +2,12 @@ import pandas as pd
 import time
 import os
 import sys
+from tkinter import filedialog
+from tkinter import *
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 
+'''
 
 def loadscript(a,b,c):
     print(a,b,c)
@@ -15,17 +20,23 @@ def loadscripts(step, trial, duration):
     time.sleep(.2)
     print("\n")
 
-#loadscript('Copying over PrimeRX', 6, .4)
+loadscript('Copying over PrimeRX', 6, .4)
 writer = pd.ExcelWriter('TrialReport.xlsx', engine='xlsxwriter')
 rxRawDF = pd.read_csv('PrimeRx.csv', low_memory=False)
 rxRawDF.to_excel(writer, sheet_name='PrimeRx RAW', index=False)
 reportDF = rxRawDF[['NDC','DRGNAME','DRUGSTRONG', 'PACKAGESIZE','QUANT']]
 #print(rxRawDF.head(10))
 
+'''
+files = os.listdir(os.curdir)
+Kinray = ['KIN','kin','Kin']
+print()
 
-#loadscript('Copying over Kinray RX', 6, .4)
-if os.path.exists('KINRX.xls'):
-    kinrayRXDF = pd.read_excel('KINRX.xls',header= None, index= False , names=[0,1,2,3])
+if any([i for i in files if any(x in i for x in Kinray)]):
+    Tk().withdraw()
+    KINOTCFile = askopenfilename(initialdir='/', title='PLEASE SELECT KINRAY (RX) FILE') 
+    loadscript('Copying over Kinray RX', 6, .4)
+    kinrayRXDF = pd.read_excel(KINRXFile,header= None, index= False , names=[0,1,2,3])
     kinrayRXDF = kinrayRXDF.drop(kinrayRXDF.index[[0,1,2,3,4,5,6]])
     kinrayRXDF.columns = kinrayRXDF.iloc[0]
     kinrayRXDF = kinrayRXDF.rename(columns={'Universal NDC': 'U NDC'})
@@ -35,16 +46,18 @@ if os.path.exists('KINRX.xls'):
     kinrayRXDF = kinrayRXDF[['NDC', 'Drug Name', 'Qty']]
     kinrayRX_sheet = kinrayRXDF[['NDC', 'Drug Name', 'Qty']]
     kinrayRXDF = kinrayRXDF.rename(columns={'Qty': 'KIN RX'})
-    #print(kinrayRXDF.head())
+    print(kinrayRXDF.head())
     kinrayRXDF = kinrayRXDF[['NDC','KIN RX']]
     kinrayRX_sheet.to_excel(writer, sheet_name='KIN_RX', index=False)
 else:
-    kinrayRXDF = pd.DataFrame(columns=['NDC']) 
+    kinrayRXDF = pd.DataFrame(columns=['NDC'])
 
-
-#loadscript('Copying over Kinray OTC', 6, .3)
-if os.path.exists('KINOTC.xls'): 
-    kinrayOTCDF = pd.read_excel('KINOTC.xls',header= None, index= False , names=[0,1,2,3])
+'''
+loadscript('Copying over Kinray OTC', 6, .3)
+if any('KIN' in i for i in files):
+    Tk().withdraw()
+    KINOTCFile = askopenfilename(initialdir='/', title='PLEASE SELECT KINRAY (OTC) FILE') 
+    kinrayOTCDF = pd.read_excel(KINOTCFile,header= None, index= False , names=[0,1,2,3])
     kinrayOTCDF = kinrayOTCDF.drop(kinrayOTCDF.index[[0,1,2,3,4,5,6]])
     kinrayOTCDF.columns = kinrayOTCDF.iloc[0]
     kinrayOTCDF = kinrayOTCDF.rename(columns={'Universal NDC': 'U NDC'})
@@ -61,10 +74,11 @@ else:
     kinrayOTCDF = pd.DataFrame(columns=['NDC']) 
 
 
-
-#loadscript('Copying over McKesson', 6, .3)
-if os.path.exists('MCK.csv'): 
-    MCKDF = pd.read_csv('MCK.csv', header= None)
+loadscript('Copying over McKesson', 6, .3)
+if any('Mck' in i for i in files):
+    Tk().withdraw()
+    MCKFile = askopenfilename(initialdir='/', title='PLEASE SELECT KINRAY (OTC) FILE') 
+    MCKDF = pd.read_csv(MCKFile, header= None, encoding='ISO-8859-1')
     MCKDF = MCKDF.drop(MCKDF.index[[0,1,2,3,4,5,6]])
     MCKDF.columns = MCKDF.iloc[0]
     MCKDF = MCKDF.drop(MCKDF.index[0])
@@ -77,22 +91,29 @@ if os.path.exists('MCK.csv'):
     MCKDF = MCKDF[['NDC','MCK']]
     MCK_sheet.to_excel(writer, sheet_name='MCK', index=False)
 else:
-    kinrayRXDF = pd.DataFrame(columns=['NDC']) 
+    MCKDF = pd.DataFrame(columns=['NDC']) 
 
 
-#loadscript('Creating Report sheet', 6, .6)
+loadscript('Creating Report sheet', 6, .6)
 reportDF = reportDF.groupby(['NDC','DRGNAME','DRUGSTRONG', 'PACKAGESIZE'], as_index=False).sum()
 reportDF['Total Dispense'] = reportDF['QUANT']/reportDF['PACKAGESIZE']
 reportDF['Total Dispense'] = reportDF['Total Dispense'].apply(lambda x:round(x,1))
 reportDF1 = pd.merge(reportDF, kinrayRXDF, on=['NDC'], how='left')
 reportDF2 = pd.merge(reportDF1, kinrayOTCDF, on=['NDC'], how='left')
 reportDF = pd.merge(reportDF2, MCKDF, on=['NDC'], how='left')
-reportDF['Total Purchase'] = reportDF['KIN RX'] + reportDF['MCK']
-reportDF['DISP'] = reportDF['Total Dispense'] - reportDF['Total Purchase']
+#print(reportDF.head())
+if all([item in reportDF.columns for item in ['KIN RX','KIN OTC', 'MCK']]):
+    reportDF['Total Purchase'] = reportDF[['KIN RX','KIN OTC', 'MCK']].sum(axis=1)
+elif all([item in reportDF.columns for item in ['KIN RX','KIN OTC']]):
+    reportDF['Total Purchase'] = reportDF[['KIN RX','KIN OTC']].sum(axis=1)
+elif all([item in reportDF.columns for item in ['KIN RX']]):
+    reportDF['Total Purchase'] = reportDF[['KIN RX']].sum(axis=1)
+
+
+reportDF['DISC'] = reportDF['Total Dispense'] - reportDF['Total Purchase']
 reportDF.to_excel(writer, sheet_name='Report', index=False)
 
 writer.save()
 os.system("open -a 'Microsoft Excel.app' 'TrialReport.xlsx'")
 # Windows - os.system('start excel.exe "%s\\TrialReport.xls"' % (sys.path[0], ))
-
-
+'''
