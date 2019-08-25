@@ -63,7 +63,6 @@ writer = pd.ExcelWriter('TrialReport.xlsx', engine='xlsxwriter')
 Tk().withdraw()
 
 
-
 PrimeRXFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Dispense FILE') 
 if "xls" in PrimeRXFile:
     rxRawDF = pd.read_excel(PrimeRXFile, sheet_name=0, header= None, index= False)
