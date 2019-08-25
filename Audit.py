@@ -124,8 +124,6 @@ else:
 
 
 
-
-
 if any([i for i in files if any(x in i for x in Kinray)]):
     Tk().withdraw()
     KINOTCFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT KINRAY (OTC) FILE') 
