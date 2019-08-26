@@ -8,14 +8,12 @@ import string
 import xlsxwriter
 import io
 import csv
+import re
 from tkinter import filedialog
 from tkinter import *
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from functools import reduce
-
-
-
 
 def loadscript(a,b,c):
     print(a,b,c)
@@ -34,46 +32,25 @@ def add_zeros(col, intgr):
 
 
 files = os.listdir(os.curdir)
-Kinray = ['KIN','kin','Kin']
-Mckesson = ['Mckesson','MCK','mck','Mck']
-Toprx = ['TOP','top','Top','Toprx','TOPRX','toprx']
-ABC = ['ABC','abc','Abc']
-Oak = ['OAK', 'Oak', 'oak',]
-Maks = ['MAKS','Maks','maks']
-Alpine = ['ALP','Alp','alp','Alpine','ALPINE']
-HDSmith = ['HDSMITH','Hdsmith','HDS']
-Anda = ['ANDA','anda','Anda']
-Cardinal = ['Cardinal','CARDINAL','cardinal']
-Healthcare = ['healthcare','Healthcare','HEALTCARE']
-Hercules = ['Hercules','HERCULES','hercules']
-Integralrx = ['integralrx','Integralrx','IntegralRX','INTEGRALRX']
-Kymeds = ['Kymeds','KYMEDS','kymeds']
-Masters = ['masters','Masters','MASTERS']
-Payless = ['payless','Payless','PAYLESS']
-Primed = ['primed','Primed','PRIMED']
-Redmond = ['redmond','Redmond','REDMOND']
-Rxsupply = ['rxsupply','Rxsupply','RXSUPPLY']
-Trxade = ['trxade','Trxade','TRXADE']
 
 
 writer = pd.ExcelWriter('TrialReport.xlsx', engine='xlsxwriter')
 
 
-
 Tk().withdraw()
 
-
-PrimeRXFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Dispense FILE') 
-if "xls" in PrimeRXFile:
-    rxRawDF = pd.read_excel(PrimeRXFile, sheet_name=0, header= None, index= False)
-    rxRawDF.columns = rxRawDF.iloc[0]
-    rxRawDF = rxRawDF.drop(rxRawDF.index[0])
-elif "csv" in PrimeRXFile:
-    rxRawDF = pd.read_csv(PrimeRXFile,header= None)
-    rxRawDF.columns = rxRawDF.iloc[0]
-    rxRawDF = rxRawDF.drop(rxRawDF.index[0])
-    rxRawDF = rxRawDF.replace({'=':'', '"':''}, regex=True)
-
+PrimeRX = ['primerx','Primerx','PrimeRX','PRIMERX','disp','Disp','DISP','report','Report','REPORT']
+if any([i for i in files if any(x in i for x in PrimeRX)]):
+    PrimeRXFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Dispense FILE') 
+    if "xls" in PrimeRXFile:
+        rxRawDF = pd.read_excel(PrimeRXFile, sheet_name=0, header= None, index= False)
+        rxRawDF.columns = rxRawDF.iloc[0]
+        rxRawDF = rxRawDF.drop(rxRawDF.index[0])
+    elif "csv" in PrimeRXFile:
+        rxRawDF = pd.read_csv(PrimeRXFile,header= None)
+        rxRawDF.columns = rxRawDF.iloc[0]
+        rxRawDF = rxRawDF.drop(rxRawDF.index[0])
+        rxRawDF = rxRawDF.replace({'=':'', '"':''}, regex=True)
 
 rxRawDF.to_excel(writer, sheet_name='PrimeRx RAW', index=False)
 rawColumns = ['NDC','DRGNAME','DRUGNAME','DRUG NAME','DRUG NAME ','DRUGSTRONG','Pack','PACK','PACKAGESIZE','QTY','Quantity','QUANT','Quant','STRENGTH']
@@ -102,10 +79,11 @@ reportDF['DISP'] = reportDF['DISP'].apply(lambda x:round(x,1))
 
 
 
-
-if any([i for i in files if any(x in i for x in Kinray)]):
-    Tk().withdraw()
-    KINRXFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT KINRAY (RX) FILE') 
+KINRXFileX = [filename for filename in os.listdir('.') if re.search(r'kin*rx', filename, re.IGNORECASE)] 
+if not KINRXFileX:
+    kinrayRXDF = pd.DataFrame(columns=['NDC'])
+else:
+    KINRXFile = KINRXFileX[0] 
     if "xls" in KINRXFile:
             kinrayRXDF = pd.read_excel(KINRXFile,header= None)
     elif "csv" in KINRXFile:
@@ -118,15 +96,14 @@ if any([i for i in files if any(x in i for x in Kinray)]):
     kinrayRXDF = kinrayRXDF.groupby(['NDC'], as_index=False).sum()
     kinrayRXDF = kinrayRXDF.rename(columns={'Qty': 'KIN RX'})
     kinrayRXDF = kinrayRXDF[['NDC','KIN RX']]
-else:
+
+
+
+KINOTCFileX = [filename for filename in os.listdir('.') if re.search(r'kin*otc', filename, re.IGNORECASE)] 
+if not KINOTCFileX:
     kinrayRXDF = pd.DataFrame(columns=['NDC'])
-
-
-
-
-if any([i for i in files if any(x in i for x in Kinray)]):
-    Tk().withdraw()
-    KINOTCFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT KINRAY (OTC) FILE') 
+else:
+    KINOTCFile = KINOTCFileX[0]
     if "xls" in KINOTCFile:
             kinrayOTCDF = pd.read_excel(KINOTCFile,header= None)
     elif "csv" in KINOTCFile:
@@ -139,16 +116,17 @@ if any([i for i in files if any(x in i for x in Kinray)]):
     kinrayOTCDF = kinrayOTCDF.groupby(['NDC'], as_index=False).sum()
     kinrayOTCDF = kinrayOTCDF.rename(columns={'Qty': 'KIN OTC'})
     kinrayOTCDF = kinrayOTCDF[['NDC','KIN OTC']]
-else:
-    kinrayOTCDF = pd.DataFrame(columns=['NDC'])
 
-if any([i for i in files if any(x in i for x in Mckesson)]):
-    Tk().withdraw()
-    MCKFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT MCKESSON FILE') 
+
+MCKFileX = [filename for filename in os.listdir('.') if re.search(r'mck|mckesson', filename, re.IGNORECASE)] 
+if not MCKFileX:
+    MCKDF = pd.DataFrame(columns=['NDC'])
+else:
+    MCKFile = MCKFileX[0]
     if "xls" in MCKFile:
-            MCKDF = pd.read_excel(MCKFile,header= None, index= False)
-    elif "csv" in MCKFile:
-            MCKDF = pd.read_csv(MCKFile,header= None, encoding='ISO-8859-1')
+        MCKDF = pd.read_excel(MCKFile,header= None, index= False)
+    elif "csv" in MCKFileX:
+        MCKDF = pd.read_csv(MCKFile,header= None, encoding='ISO-8859-1')
     MCKDF = MCKDF[((MCKDF.astype(str) == 'NDC/UPC').cumsum()).any(1)]
     MCKDF.columns = MCKDF.iloc[0]
     MCKDF = MCKDF.drop(MCKDF.index[0])
@@ -159,13 +137,15 @@ if any([i for i in files if any(x in i for x in Mckesson)]):
     MCKDF = MCKDF.groupby(['NDC/UPC'], as_index=False).sum()
     MCKDF = MCKDF.rename(columns={'NDC/UPC': 'NDC'})
     MCKDF = MCKDF.rename(columns={'Net': 'MCK'})
+    MCKDF = MCKDF[['NDC','MCK']]
+
+
+
+TopRXFileX = [filename for filename in os.listdir('.') if re.search(r'top', filename, re.IGNORECASE)]  
+if not TopRXFileX:
+    TopRXDF = pd.DataFrame(columns=['NDC'])
 else:
-    MCKDF = pd.DataFrame(columns=['NDC']) 
-
-
-if any([i for i in files if any(x in i for x in Toprx)]):
-    Tk().withdraw()
-    TopRXFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT TOPRX FILE') 
+    TopRXFile = TopRXFileX[0]
     if "xls" in TopRXFile:
             TopRXDF = pd.read_excel(TopRXFile,header= None, index= False)
     elif "csv" in TopRXFile:
@@ -179,14 +159,13 @@ if any([i for i in files if any(x in i for x in Toprx)]):
     TopRXDF['QUANTITY']=TopRXDF['QUANTITY'].apply(float)
     TopRXDF = TopRXDF.groupby(['NDC'], as_index=False).sum()
     TopRXDF = TopRXDF.rename(columns={'QUANTITY': 'TopRX'})
+
+
+ABCFileX = [filename for filename in os.listdir('.') if re.search(r'abc|amerisource', filename, re.IGNORECASE)] 
+if not ABCFileX:
+    AmerisourceDF = pd.DataFrame(columns=['NDC'])
 else:
-    TopRXDF = pd.DataFrame(columns=['NDC'])
-
-
-
-if any([i for i in files if any(x in i for x in ABC )]):
-    Tk().withdraw()
-    ABCFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT ABC FILE') 
+    ABCFile = ABCFileX[0]
     if "xls" in ABCFile:
         AmerisourceDF = pd.read_excel(ABCFile,header= None, index= False, sheet_name='Item Level Detail')
         AmerisourceDF = AmerisourceDF[((AmerisourceDF.astype(str) == 'NDC').cumsum()).any(1)]
@@ -198,7 +177,6 @@ if any([i for i in files if any(x in i for x in ABC )]):
         AmerisourceDF['Sales Less Credits Qty']=AmerisourceDF['Sales Less Credits Qty'].apply(float)
         AmerisourceDF = AmerisourceDF.groupby(['NDC'], as_index=False).sum()
         AmerisourceDF = AmerisourceDF.rename(columns={'Sales Less Credits Qty': 'ABC'})
-
     elif "csv" in ABCFile:
         AmerisourceDF = pd.read_csv('ABC.csv', sep='\t')
         AmerisourceDF.to_excel(writer, sheet_name='ABC', index=False)
@@ -210,13 +188,14 @@ if any([i for i in files if any(x in i for x in ABC )]):
         AmerisourceDF['Shipped Qty']=AmerisourceDF['Shipped Qty'].apply(float)
         AmerisourceDF = AmerisourceDF.groupby(['NDC'], as_index=False).sum()
         AmerisourceDF = AmerisourceDF.rename(columns={'Shipped Qty': 'ABC'})
+
+
+
+OakFileX = [filename for filename in os.listdir('.') if re.search(r'oak', filename, re.IGNORECASE)] 
+if not OakFileX:
+    OakDF = pd.DataFrame(columns=['NDC'])
 else:
-    AmerisourceDF = pd.DataFrame(columns=['NDC'])
-
-
-if any([i for i in files if any(x in i for x in Oak)]):
-    Tk().withdraw()
-    OakFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Oak FILE') 
+    OakFile = OakFileX[0]
     if "xls" in OakFile:
             OakDF = pd.read_excel(OakFile,header= None, index= False)
     elif "csv" in OakFile:
@@ -230,14 +209,13 @@ if any([i for i in files if any(x in i for x in Oak)]):
     OakDF['Quantity']=OakDF['Quantity'].apply(float)
     OakDF = OakDF.groupby(['NDC'], as_index=False).sum()
     OakDF = OakDF.rename(columns={'Quantity': 'OAK'})
+
+
+MaksFileX = [filename for filename in os.listdir('.') if re.search(r'maks', filename, re.IGNORECASE)]  
+if not MaksFileX:
+    MaksDF = pd.DataFrame(columns=['NDC'])
 else:
-    OakDF = pd.DataFrame(columns=['NDC'])
-
-
-
-if any([i for i in files if any(x in i for x in Maks)]):
-    Tk().withdraw()
-    MaksFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Maks FILE') 
+    MaksFile = MaksFileX[0]
     if "xls" in MaksFile:
             MaksDF = pd.read_excel(MaksFile,header= None, index= False)
             MaksDF = MaksDF.rename(columns={'SOLD QTY':'Quantity'})
@@ -252,15 +230,13 @@ if any([i for i in files if any(x in i for x in Maks)]):
     MaksDF['Quantity']=MaksDF['Quantity'].apply(float)
     MaksDF = MaksDF.groupby(['NDC'], as_index=False).sum()
     MaksDF = MaksDF.rename(columns={'Quantity': 'MAKS'})
+
+
+AlpineFileX = [filename for filename in os.listdir('.') if re.search(r'alpine', filename, re.IGNORECASE)] 
+if not AlpineFileX:
+    AlpineDF = pd.DataFrame(columns=['NDC'])
 else:
-    MaksDF = pd.DataFrame(columns=['NDC'])
-
-
-if any([i for i in files if any(x in i for x in Alpine)]):
-    Tk().withdraw()
-
-    
-    AlpineFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Alpine FILE') 
+    AlpineFile = AlpineFileX[0]
     if "xls" in AlpineFile:
             AlpineDF = pd.read_excel(AlpineFile,header= None, index= False)
     elif "csv" in AlpineFile:
@@ -274,14 +250,14 @@ if any([i for i in files if any(x in i for x in Alpine)]):
     AlpineDF['Quantity']=AlpineDF['Quantity'].apply(float)
     AlpineDF = AlpineDF.groupby(['NDC'], as_index=False).sum()
     AlpineDF = AlpineDF.rename(columns={'Quantity': 'ALPINE'})
+
+
+
+HDSmithFileX = [filename for filename in os.listdir('.') if re.search(r'hds', filename, re.IGNORECASE)] 
+if not HDSmithFileX:
+    HDSmithDF = pd.DataFrame(columns=['NDC'])
 else:
-    AlpineDF = pd.DataFrame(columns=['NDC'])
-
-
-
-if any([i for i in files if any(x in i for x in HDSmith)]):
-    Tk().withdraw()
-    HDSmithFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT HDSmith FILE') 
+    HDSmithFile = HDSmithFileX[0]
     if "xls" in HDSmithFile:
             HDSmithDF = pd.read_excel(HDSmithFile,header= None, index= False)
             
@@ -295,14 +271,14 @@ if any([i for i in files if any(x in i for x in HDSmith)]):
     HDSmithDF['Units']=HDSmithDF['Units'].apply(float)
     HDSmithDF = HDSmithDF.groupby(['NDC'], as_index=False).sum()
     HDSmithDF = HDSmithDF.rename(columns={'Units': 'HDSMITH'})
+
+
+
+AndaFileX = [filename for filename in os.listdir('.') if re.search(r'anda', filename, re.IGNORECASE)] 
+if not AndaFileX:
+    AndaDF = pd.DataFrame(columns=['NDC'])
 else:
-    HDSmithDF = pd.DataFrame(columns=['NDC'])
-
-
-
-if any([i for i in files if any(x in i for x in Anda)]):
-    Tk().withdraw()
-    AndaFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT ANDA FILE') 
+    AndaFile = AndaFileX[0]
     if "xls" in AndaFile:
             #AndaDF = pd.read_excel(AndaFile,header= None,sheet_name=0, index= False)
             Andaxl = pd.ExcelFile(AndaFile)
@@ -325,13 +301,13 @@ if any([i for i in files if any(x in i for x in Anda)]):
     AndaDF = AndaDF.groupby(['NDC'], as_index=False).sum()
     AndaDF = AndaDF.rename(columns={'QTY SHIPPED': 'ANDA'})
     AndaDF = AndaDF[['NDC','ANDA']]
+
+
+CardinalFileX = [filename for filename in os.listdir('.') if re.search(r'cardinal', filename, re.IGNORECASE)] 
+if not CardinalFileX:
+    CardinalDF = pd.DataFrame(columns=['NDC'])
 else:
-    AndaDF = pd.DataFrame(columns=['NDC'])
-
-
-if any([i for i in files if any(x in i for x in Cardinal)]):
-    Tk().withdraw()
-    CardinalFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT CARDINAL FILE') 
+    CardinalFile = CardinalFileX[0]
     if "xls" in CardinalFile:
             CardinalDF = pd.read_excel(CardinalFile,header= None,sheet_name=0, index= False)
     elif "csv" in CardinalFile:
@@ -346,14 +322,14 @@ if any([i for i in files if any(x in i for x in Cardinal)]):
     CardinalDF = CardinalDF.groupby(['NDC'], as_index=False).sum()
     CardinalDF = CardinalDF.rename(columns={'Quantity Shipped': 'CARDINAL'})
     CardinalDF = CardinalDF[['NDC','CARDINAL']]
+
+
+
+HealthcareFileX = [filename for filename in os.listdir('.') if re.search(r'healthcare', filename, re.IGNORECASE)] 
+if not HealthcareFileX:
+    HealthcareDF = pd.DataFrame(columns=['NDC']) 
 else:
-    CardinalDF = pd.DataFrame(columns=['NDC'])
-
-
-
-if any([i for i in files if any(x in i for x in Healthcare)]):
-    Tk().withdraw()
-    HealthcareFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT HEALTHCARE FILE') 
+    HealthcareFile = HealthcareFileX[0]
     if "xls" in HealthcareFile:
             HealthcareDF = pd.read_excel(HealthcareFile,header= None,sheet_name=1, index= False)
     elif "csv" in HealthcareFile:
@@ -377,18 +353,13 @@ if any([i for i in files if any(x in i for x in Healthcare)]):
     HealthcareDF - HealthcareDF.groupby(['NDC'], as_index=False).sum()
     HealthcareDF = HealthcareDF.rename(columns={'Qty': 'HEALTHCARE'})
     HealthcareDF = HealthcareDF[['NDC','HEALTHCARE']]
+
+
+HerculesFileX = [filename for filename in os.listdir('.') if re.search(r'hercules', filename, re.IGNORECASE)]  
+if not HerculesFileX:
+    HerculesDF = pd.DataFrame(columns=['NDC'])
 else:
-    HealthcareDF = pd.DataFrame(columns=['NDC']) 
-
-
-
-
-
-
-
-if any([i for i in files if any(x in i for x in Hercules)]):
-    Tk().withdraw()
-    HerculesFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT HERCULES FILE') 
+    HerculesFile = HerculesFile[0]
     if "xls" in HerculesFile:
             HerculesDF = pd.read_excel(HerculesFile,header= None, index= False)
     elif "csv" in HerculesFile:
@@ -402,14 +373,14 @@ if any([i for i in files if any(x in i for x in Hercules)]):
     HerculesDF = HerculesDF.groupby(['NDC'], as_index=False).sum()
     HerculesDF = HerculesDF.rename(columns={'Total Quantity': 'HERCULES'})
     HerculesDF = HerculesDF[['NDC','HERCULES']]
+
+
+
+IntegralRXFileX = [filename for filename in os.listdir('.') if re.search(r'integral', filename, re.IGNORECASE)] 
+if not IntegralRXFileX:
+    IntegralRXDF = pd.DataFrame(columns=['NDC'])
 else:
-    HerculesDF = pd.DataFrame(columns=['NDC'])
-
-
-
-if any([i for i in files if any(x in i for x in Integralrx)]):
-    Tk().withdraw()
-    IntegralRXFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT INTEGRALRX FILE') 
+    IntegralRXFile = IntegralRXFileX[0]
     if "xls" in IntegralRXFile:
             IntegralRXDF = pd.read_excel(IntegralRXFile,header= None,sheet_name=0, index= False)
     elif "csv" in IntegralRXFile:
@@ -423,13 +394,13 @@ if any([i for i in files if any(x in i for x in Integralrx)]):
     IntegralRXDF = IntegralRXDF.groupby(['NDC'], as_index=False).sum()
     IntegralRXDF = IntegralRXDF.rename(columns={'QTY': 'INTEGRALRX'})
     IntegralRXDF = IntegralRXDF[['NDC','INTEGRALRX']]
+
+
+KyMEDSFileX = [filename for filename in os.listdir('.') if re.search(r'kymed', filename, re.IGNORECASE)] 
+if not KyMEDSFileX:
+    KyMEDSDF = pd.DataFrame(columns=['NDC'])
 else:
-    IntegralRXDF = pd.DataFrame(columns=['NDC'])
-
-
-if any([i for i in files if any(x in i for x in Kymeds)]):
-    Tk().withdraw()
-    KyMEDSFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT KYMEDS FILE') 
+    KyMEDSFile = KyMEDSFileX[0]
     if "xls" in KyMEDSFile:
             KyMEDSDF = pd.read_excel(KyMEDSFile,header= None,index= False)
     elif "csv" in KyMEDSFile:
@@ -446,13 +417,13 @@ if any([i for i in files if any(x in i for x in Kymeds)]):
     KyMEDSDF = KyMEDSDF.groupby(['NDC'], as_index=False).sum()
     KyMEDSDF = KyMEDSDF.rename(columns={'Qty': 'KYMEDS'})
     KyMEDSDF = KyMEDSDF[['NDC','KYMEDS']]
+
+
+MastersFileX = [filename for filename in os.listdir('.') if re.search(r'master', filename, re.IGNORECASE)] 
+if not MastersFileX:
+    MastersDF = pd.DataFrame(columns=['NDC'])
 else:
-    KyMEDSDF = pd.DataFrame(columns=['NDC'])
-
-
-if any([i for i in files if any(x in i for x in Masters)]):
-    Tk().withdraw()
-    MastersFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Masters FILE') 
+    MastersFile = MastersFileX[0]
     if "xls" in MastersFile:
             MastersDF = pd.read_excel(MastersFile,header= None, index= False)
             
@@ -466,12 +437,13 @@ if any([i for i in files if any(x in i for x in Masters)]):
     MastersDF['Qty']=MastersDF['Qty'].apply(float)
     MastersDF = MastersDF.groupby(['NDC'], as_index=False).sum()
     MastersDF = MastersDF.rename(columns={'Qty': 'HDSMITH'})
-else:
-    MastersDF = pd.DataFrame(columns=['NDC'])
 
-if any([i for i in files if any(x in i for x in Payless)]):
-    Tk().withdraw()
-    PaylessFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT PAYLESS FILE') 
+
+PaylessFileX = [filename for filename in os.listdir('.') if re.search(r'payless', filename, re.IGNORECASE)] 
+if not PaylessFileX:
+    PaylessDF = pd.DataFrame(columns=['NDC'])
+else:
+    PaylessFile = PaylessFileX[0]
     if "xls" in PaylessFile:
             PaylessDF = pd.read_excel(PaylessFile,header= None, index= False)
     elif "csv" in PaylessFile:
@@ -495,15 +467,15 @@ if any([i for i in files if any(x in i for x in Payless)]):
     PaylessDF = PaylessDF.groupby(['NDC'], as_index=False).sum()
     PaylessDF = PaylessDF.rename(columns={'NDC': 'NDC'})
     PaylessDF = PaylessDF.rename(columns={'Qty': 'PAYLESS'})
-else:
-    PaylessDF = pd.DataFrame(columns=['NDC'])
 
-if any([i for i in files if any(x in i for x in Primed)]):
-    Tk().withdraw()
-    PrimedFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Primed FILE') 
+
+PrimedFileX = [filename for filename in os.listdir('.') if re.search(r'primed', filename, re.IGNORECASE)] 
+if not PrimedFileX:
+    PrimedDF = pd.DataFrame(columns=['NDC'])
+else:
+    PrimedFile = PrimedFileX[0]
     if "xls" in PrimedFile:
             PrimedDF = pd.read_excel(PrimedFile,header= None, index= False)
-            
     elif "csv" in PrimedFile:
             PrimedDF = pd.read_csv(PrimedFile, encoding='ISO-8859-1')
     PrimedDF.columns = PrimedDF.iloc[0]
@@ -515,15 +487,14 @@ if any([i for i in files if any(x in i for x in Primed)]):
     PrimedDF = PrimedDF.groupby(['NDC'], as_index=False).sum()
     PrimedDF['NDC']=PrimedDF['NDC'].astype(str).str[:5]+'-'+PrimedDF['NDC'].astype(str).str[5:9]+'-'+PrimedDF['NDC'].astype(str).str[-2:]
     PrimedDF = PrimedDF.rename(columns={'Quantity': 'PRIMED'})
-else:
-    PrimedDF = pd.DataFrame(columns=['NDC'])
 
-if any([i for i in files if any(x in i for x in Redmond)]):
-    Tk().withdraw()
-    RedmondFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT Redmond FILE') 
+RedmondFileX = [filename for filename in os.listdir('.') if re.search(r'redmond', filename, re.IGNORECASE)] 
+if not RedmondFileX:
+    RedmondDF = pd.DataFrame(columns=['NDC'])
+else:
+    RedmondFile = RedmondFileX[0]
     if "xls" in RedmondFile:
             RedmondDF = pd.read_excel(RedmondFile,header= None, index= False)
-            
     elif "csv" in RedmondFile:
             RedmondDF = pd.read_csv(RedmondFile, encoding='ISO-8859-1')
     RedmondDF.columns = RedmondDF.iloc[0]
@@ -534,12 +505,12 @@ if any([i for i in files if any(x in i for x in Redmond)]):
     RedmondDF = RedmondDF.rename(columns={'Product Code':'NDC'})
     RedmondDF = RedmondDF.groupby(['NDC'], as_index=False).sum()
     RedmondDF = RedmondDF.rename(columns={'Quantity': 'REDMOND'})
-else:
-    RedmondDF = pd.DataFrame(columns=['NDC'])
 
-if any([i for i in files if any(x in i for x in Rxsupply)]):
-    Tk().withdraw()
-    RXSupplyFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT RXSupply FILE') 
+RXSupplyFileX = [filename for filename in os.listdir('.') if re.search(r'rxsupply', filename, re.IGNORECASE)] 
+if not RXSupplyFileX:
+    RXSupplyDF = pd.DataFrame(columns=['NDC'])
+else:
+    RXSupplyFile = RXSupplyFileX[0]
     if "xls" in RXSupplyFile:
             RXSupplyDF = pd.read_excel(RXSupplyFile,header= None, index= False)
             
@@ -554,13 +525,13 @@ if any([i for i in files if any(x in i for x in Rxsupply)]):
     RXSupplyDF['NDC']=RXSupplyDF['NDC'].astype(str).str[:5]+'-'+RXSupplyDF['NDC'].astype(str).str[5:9]+'-'+RXSupplyDF['NDC'].astype(str).str[-2:]
     RXSupplyDF = RXSupplyDF.groupby(['NDC'], as_index=False).sum()
     RXSupplyDF = RXSupplyDF.rename(columns={'QUANTITY': 'REDMOND'})
+
+
+TRXadeFileX = [filename for filename in os.listdir('.') if re.search(r'trxade', filename, re.IGNORECASE)] 
+if not TRXadeFileX:
+    TRXadeDF = pd.DataFrame(columns=['NDC'])
 else:
-    RXSupplyDF = pd.DataFrame(columns=['NDC'])
-
-
-if any([i for i in files if any(x in i for x in Trxade)]):
-    Tk().withdraw()
-    TRXadeFile = askopenfilename(initialdir=os.getcwd(), title='PLEASE SELECT TRXADE FILE') 
+    TRXadeFile = TRXadeFileX[0]
     if "xls" in TRXadeFile:
             TRXadeDF = pd.read_excel(TRXadeFile,header= None, index= False)
     elif "csv" in TRXadeFile:
@@ -574,8 +545,6 @@ if any([i for i in files if any(x in i for x in Trxade)]):
     TRXadeDF['NDC']=TRXadeDF['NDC'].astype(str).str[:5]+'-'+TRXadeDF['NDC'].astype(str).str[5:9]+'-'+TRXadeDF['NDC'].astype(str).str[-2:]
     TRXadeDF = TRXadeDF.groupby(['NDC'], as_index=False).sum()
     TRXadeDF = TRXadeDF.rename(columns={'Qty Fulfilled': 'TRXADE'})
-else:
-    TRXadeDF = pd.DataFrame(columns=['NDC'])
 
 
 
